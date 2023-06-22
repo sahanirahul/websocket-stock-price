@@ -1,10 +1,10 @@
 package dto
 
-type UnderLyings struct {
+type Instrument struct {
 	Symbol         string `json:"symbol"`
 	Underlying     string `json:"underlying"`
-	Token          string `json:"token"`
+	Token          int64  `json:"token"`
 	InstrumentType string `json:"instrument_type"`
 	Expiry         string `json:"expiry"`
-	Strike         string `json:"strike"`
+	Strike         int64  `json:"strike"`
 }
