@@ -23,9 +23,9 @@ func (cr *websocketrepo) WSEventListener(ctx context.Context) error {
 	return nil
 }
 
-func (cr *websocketrepo) Subscribe(ctx context.Context) error {
+func (cr *websocketrepo) Subscribe(ctx context.Context, tokens []int64) error {
 	return nil
 }
-func (cr *websocketrepo) UnSubscribe(ctx context.Context) error {
+func (cr *websocketrepo) UnSubscribe(ctx context.Context, tokens []int64) error {
 	return nil
 }

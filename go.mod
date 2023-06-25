@@ -3,6 +3,7 @@ module sensibull/stocks-api
 go 1.18
 
 require (
+	github.com/emirpasic/gods v1.18.1
 	github.com/gin-gonic/gin v1.9.0
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/lib/pq v1.10.9

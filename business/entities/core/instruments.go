@@ -3,6 +3,8 @@ package core
 import (
 	"encoding/json"
 	"sensibull/stocks-api/business/entities/dto"
+
+	"github.com/emirpasic/gods/sets/hashset"
 )
 
 type Instrument struct {
@@ -43,12 +45,18 @@ func GetDtoInstruments(coreInstruments []Instrument) []dto.Instrument {
 	return dtos
 }
 
-type Tokens []int64
+type Tokens struct {
+	Set *hashset.Set
+}
 
-func (tks Tokens) MarshalBinary() (data []byte, err error) {
+func NewTokenSet() Tokens {
+	return Tokens{Set: hashset.New()}
+}
+
+func (tks *Tokens) MarshalBinary() (data []byte, err error) {
 	return json.Marshal(tks)
 }
 
 func (tks *Tokens) UnmarshalBinary(data []byte) error {
-	return json.Unmarshal(data, &tks)
+	return json.Unmarshal(data, tks)
 }
