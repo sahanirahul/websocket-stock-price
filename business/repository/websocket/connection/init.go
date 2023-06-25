@@ -2,29 +2,29 @@ package connection
 
 import (
 	"log"
+	"sync"
 
 	"github.com/gorilla/websocket"
 )
 
 var webSocketConn *websocket.Conn
 
-func createWebSocketConnection(endpointURL string) error {
-	// Create a new WebSocket connection
-	conn, _, err := websocket.DefaultDialer.Dial(endpointURL, nil)
-	if err != nil {
-		log.Fatal("WebSocket connection error:", err)
-		return err
-	}
-	webSocketConn = conn
-	return nil
-}
+var once sync.Once
 
-func GetWebSocketConnection(endpointURL string, establishNewConn bool) (*websocket.Conn, error) {
-	if webSocketConn == nil || establishNewConn {
-		err := createWebSocketConnection(endpointURL)
+func GetWebSocketConnection(websocketURL string, establishNewConn bool) (*websocket.Conn, error) {
+	once.Do(func() {
+		conn, _, err := websocket.DefaultDialer.Dial(websocketURL, nil)
 		if err != nil {
-			return nil, err
+			log.Fatal("WebSocket connection error:", err)
 		}
+		webSocketConn = conn
+	})
+	if establishNewConn {
+		conn, _, err := websocket.DefaultDialer.Dial(websocketURL, nil)
+		if err != nil {
+			log.Fatal("WebSocket connection error:", err)
+		}
+		webSocketConn = conn
 	}
 	return webSocketConn, nil
 }

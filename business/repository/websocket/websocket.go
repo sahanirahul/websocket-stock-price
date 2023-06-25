@@ -16,7 +16,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-const websocketUrl string = "wss://prototype.sbulltech.com/api/ws"
+const websocketURL = "wss://prototype.sbulltech.com/api/ws"
 
 type websocketrepo struct {
 	db irepo.IInstrumentRepo
@@ -36,11 +36,11 @@ func NewWebsocketRepo(db irepo.IInstrumentRepo) irepo.IWebsocketRepo {
 }
 
 func (wr *websocketrepo) wsEventListener(ctx context.Context) error {
-	conn, err := connection.GetWebSocketConnection(websocketUrl, false)
-	if err != nil {
-		log.Fatal("unable to get websocket connection")
-	}
 	for {
+		conn, err := connection.GetWebSocketConnection(websocketURL, false)
+		if err != nil {
+			log.Fatal("unable to get websocket connection")
+		}
 		// Read message from WebSocket connection
 		_, message, err := conn.ReadMessage()
 		if err != nil {
@@ -76,7 +76,7 @@ var subscriptionChan chan core.WebsocketSubscription
 var retryCount atomic.Int32
 
 func (wr *websocketrepo) updateSubscription(ctx context.Context) error {
-	conn, err := connection.GetWebSocketConnection(websocketUrl, false)
+	conn, err := connection.GetWebSocketConnection(websocketURL, false)
 	if err != nil {
 		log.Fatal("unable to get websocket connection")
 		return err
@@ -92,7 +92,7 @@ func (wr *websocketrepo) updateSubscription(ctx context.Context) error {
 		if err != nil {
 			count := retryCount.Add(1)
 			if count > 3 || websocket.IsCloseError(err, websocket.CloseNormalClosure) {
-				conn, err = connection.GetWebSocketConnection(websocketUrl, true)
+				conn, err = connection.GetWebSocketConnection(websocketURL, true)
 				if err != nil {
 					log.Fatal("unable to get websocket connection in write")
 					return err

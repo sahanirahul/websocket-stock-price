@@ -3,9 +3,8 @@ package main
 import (
 	"log"
 	"net/http"
-	"sensibull/stocks-api/routes"
-
 	"os"
+	"sensibull/stocks-api/routes"
 
 	"github.com/gin-gonic/gin"
 )

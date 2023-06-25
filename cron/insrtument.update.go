@@ -33,7 +33,7 @@ func NewCron() *cronn {
 
 func (cro *cronn) startUnderlyingUpdate() {
 	c := cron.New()
-	c.AddFunc("@every 2m", func() {
+	c.AddFunc("@every 15m", func() {
 		ctx := context.Background()
 		logging.Logger.WriteLogs(ctx, "cron_started_equity", logging.InfoLevel, logging.Fields{})
 		err := cro.instrumentService.UpdateEquityStockDetails(ctx)
