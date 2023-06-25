@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,7 +10,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/go-redis/redis"
+	"github.com/redis/go-redis/v9"
+
 	_ "github.com/lib/pq"
 )
 
@@ -38,7 +40,7 @@ func initRedisClient() {
 		DB:       0,
 	})
 
-	pong, err := cli.Ping().Result()
+	pong, err := cli.Ping(context.Background()).Result()
 	fmt.Println(pong, err)
 }
 

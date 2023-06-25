@@ -5,11 +5,10 @@ import (
 	"sensibull/stocks-api/business/entities/core"
 	"sensibull/stocks-api/business/interfaces/irepo"
 	"sensibull/stocks-api/business/utility"
+	"sensibull/stocks-api/db"
 	"sensibull/stocks-api/utils/logging"
 	"sync"
 	"time"
-
-	"github.com/redis/go-redis/v9"
 )
 
 type instrumentrepo struct {
@@ -19,9 +18,10 @@ type instrumentrepo struct {
 var once sync.Once
 var repo *instrumentrepo
 
-func NewInstrumentRepo(redisCli *redis.Client) irepo.IInstrumentRepo {
+func NewInstrumentRepo() irepo.IInstrumentRepo {
 	once.Do(func() {
 		repo = &instrumentrepo{}
+		repo.redisCli = db.GetRedisClient()
 	})
 	return repo
 }
