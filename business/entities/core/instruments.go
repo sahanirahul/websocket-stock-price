@@ -38,7 +38,7 @@ func GetDtoInstrument(ci Instrument) dto.Instrument {
 }
 
 func GetDtoInstruments(coreInstruments []Instrument) []dto.Instrument {
-	dtos := make([]dto.Instrument, len(coreInstruments))
+	dtos := []dto.Instrument{}
 	for _, val := range coreInstruments {
 		dtos = append(dtos, GetDtoInstrument(val))
 	}

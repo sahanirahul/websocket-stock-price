@@ -9,7 +9,6 @@ import (
 	"sensibull/stocks-api/business/usecase"
 	"sensibull/stocks-api/utils/logging"
 	"sync"
-	"time"
 
 	"github.com/robfig/cron"
 )
@@ -27,14 +26,13 @@ func NewCron() *cronn {
 		cronObj.instrumentService = usecase.NewInstrumentService(http.NewInstrumentHttpRepo(), websocket.NewWebsocketRepo(), db.NewInstrumentRepo())
 	})
 	cronObj.startUnderlyingUpdate()
-	time.Sleep(10 * time.Second)
 	cronObj.startUnderlyingDerivativeUpdate()
 	return cronObj
 }
 
 func (cro *cronn) startUnderlyingUpdate() {
 	c := cron.New()
-	c.AddFunc("*/15 * * * *", func() {
+	c.AddFunc("@every 2m", func() {
 		ctx := context.Background()
 		logging.Logger.WriteLogs(ctx, "cron_started_equity", logging.InfoLevel, logging.Fields{})
 		err := cro.instrumentService.UpdateEquityStockDetails(ctx)
@@ -48,7 +46,7 @@ func (cro *cronn) startUnderlyingUpdate() {
 
 func (cro *cronn) startUnderlyingDerivativeUpdate() {
 	c := cron.New()
-	c.AddFunc("*/1 * * * *", func() {
+	c.AddFunc("0 * * * * *", func() {
 		ctx := context.Background()
 		logging.Logger.WriteLogs(ctx, "cron_started_derivatives", logging.InfoLevel, logging.Fields{})
 		err := cro.instrumentService.UpdateDerivativeStockDetails(ctx)

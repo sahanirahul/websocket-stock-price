@@ -136,7 +136,7 @@ func initializeLogger() error {
 		zapcore.NewCore(consoleEncoder, zapcore.AddSync(os.Stdout), zapcore.InfoLevel),
 	)
 	Logger = &zlogger{
-		logger: zap.New(core, zap.AddCaller(), zap.AddStacktrace(zapcore.ErrorLevel)),
+		logger: zap.New(core, zap.AddCaller(), zap.AddStacktrace(zapcore.PanicLevel)),
 	}
 	return nil
 }

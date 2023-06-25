@@ -41,9 +41,12 @@ func (is *instrumentservice) FetchEquityStockDetails(ctx context.Context) ([]dto
 	if err != nil {
 		return nil, err
 	}
+	if tokens.Set == nil {
+		return nil, nil
+	}
 	instruments := []core.Instrument{}
 	for _, token := range tokens.Set.Values() {
-		ins, err := is.db.GetInstrument(ctx, token.(int64))
+		ins, err := is.db.GetInstrument(ctx, int64(token.(float64)))
 		if err != nil {
 			return nil, nil
 		}
@@ -54,17 +57,20 @@ func (is *instrumentservice) FetchEquityStockDetails(ctx context.Context) ([]dto
 
 func (is *instrumentservice) FetchDerivativeStockDetails(ctx context.Context, symbol string) ([]dto.Instrument, error) {
 	// todo: fetch the token for the symbol
-	token, err := is.db.GetInstrumentToken(ctx, symbol)
+	underlyongToken, err := is.db.GetInstrumentToken(ctx, symbol)
 	if err != nil {
 		return nil, fmt.Errorf("error fetching derivatives for %s", symbol)
 	}
-	tokens, err := is.db.GetTokensAgainstToken(ctx, fmt.Sprint(token), DERIVATIVES)
+	derivativeTokens, err := is.db.GetTokensAgainstToken(ctx, fmt.Sprint(underlyongToken), DERIVATIVES)
 	if err != nil {
 		return nil, err
 	}
+	if derivativeTokens.Set == nil {
+		return nil, nil
+	}
 	instruments := []core.Instrument{}
-	for _, token := range tokens.Set.Values() {
-		ins, err := is.db.GetInstrument(ctx, token.(int64))
+	for _, token := range derivativeTokens.Set.Values() {
+		ins, err := is.db.GetInstrument(ctx, int64(token.(float64)))
 		if err != nil {
 			return nil, nil
 		}

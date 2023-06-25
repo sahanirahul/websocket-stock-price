@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sensibull/stocks-api/business/entities/core"
+	"sync"
 )
 
 // should run every 15min
@@ -19,9 +20,9 @@ func (is *instrumentservice) UpdateEquityStockDetails(ctx context.Context) error
 		// retry mechanism here
 		return err
 	}
-	go is.updateTokenSet(ctx, TOKENFORALLUNDERLYING, EQUITY, underlyingsEQ, &prevTokens)
+	is.updateTokenSet(ctx, TOKENFORALLUNDERLYING, EQUITY, underlyingsEQ, &prevTokens)
 	for _, val := range underlyingsEQ {
-		if !prevTokens.Set.Contains(val.Token) {
+		if prevTokens.Set == nil || prevTokens.Set.Size() == 0 || !prevTokens.Set.Contains(val.Token) {
 			// subscribe to websocket for this instrument
 			err = is.websocket.Subscribe(ctx, []int64{val.Token})
 			if err != nil {
@@ -48,9 +49,15 @@ func (is *instrumentservice) UpdateDerivativeStockDetails(ctx context.Context) e
 		// retry mechanism here
 		return err
 	}
+	var wg sync.WaitGroup
 	for _, val := range curEqTokens.Set.Values() {
-		go is.updateDerivativeStockDetail(ctx, val.(int64))
+		wg.Add(1)
+		go func(wg *sync.WaitGroup, token int64) {
+			defer wg.Done()
+			is.updateDerivativeStockDetail(ctx, token)
+		}(&wg, int64(val.(float64)))
 	}
+	wg.Wait()
 	return nil
 }
 
@@ -68,7 +75,7 @@ func (is *instrumentservice) updateDerivativeStockDetail(ctx context.Context, un
 	}
 	go is.updateTokenSet(ctx, fmt.Sprint(underlyingToken), DERIVATIVES, underlyingsDvts, &prevDvtsTokens)
 	for _, val := range underlyingsDvts {
-		if !prevDvtsTokens.Set.Contains(val.Token) {
+		if prevDvtsTokens.Set == nil || prevDvtsTokens.Set.Size() == 0 || !prevDvtsTokens.Set.Contains(val.Token) {
 			// subscribe to websocket for this instrument
 			err = is.websocket.Subscribe(ctx, []int64{val.Token})
 			if err != nil {
@@ -104,13 +111,17 @@ func (is *instrumentservice) updateTokenSet(ctx context.Context, itoken, itype s
 		//log the error
 	}
 	listOfTokensToUnsubscribe := []int64{}
+	if prevTokens.Set == nil || prevTokens.Set.Size() == 0 {
+		return
+	}
 	for _, token := range prevTokens.Set.Values() {
 		if !currentTokens.Set.Contains(token) {
-			err := is.db.DeleteInstrument(ctx, core.Instrument{Token: token.(int64)})
+			t := int64(token.(float64))
+			err := is.db.DeleteInstrument(ctx, core.Instrument{Token: t})
 			if err != nil {
 				// log and continue
 			}
-			listOfTokensToUnsubscribe = append(listOfTokensToUnsubscribe, token.(int64))
+			listOfTokensToUnsubscribe = append(listOfTokensToUnsubscribe, t)
 		}
 	}
 	err = is.websocket.UnSubscribe(ctx, listOfTokensToUnsubscribe)
