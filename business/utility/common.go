@@ -15,4 +15,9 @@ const (
 	TOKENFORALLUNDERLYING = "ALLUNDERYINGS"
 	EQUITY                = "EQ"
 	DERIVATIVES           = "DERIVATIVES"
+	DataTypeQuote         = "quote"
+	DataTypePing          = "ping"
+	DataTypeError         = "error"
+	MsgCommandSubscribe   = "subscribe"
+	MsgCommandUnSubscribe = "unsubscribe"
 )

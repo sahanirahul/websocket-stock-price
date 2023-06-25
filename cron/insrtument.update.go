@@ -23,7 +23,8 @@ var cronObj *cronn
 func NewCron() *cronn {
 	once.Do(func() {
 		cronObj = &cronn{}
-		cronObj.instrumentService = usecase.NewInstrumentService(http.NewInstrumentHttpRepo(), websocket.NewWebsocketRepo(), db.NewInstrumentRepo())
+		dbrepo := db.NewInstrumentRepo()
+		cronObj.instrumentService = usecase.NewInstrumentService(http.NewInstrumentHttpRepo(), websocket.NewWebsocketRepo(dbrepo), dbrepo)
 	})
 	cronObj.startUnderlyingUpdate()
 	cronObj.startUnderlyingDerivativeUpdate()

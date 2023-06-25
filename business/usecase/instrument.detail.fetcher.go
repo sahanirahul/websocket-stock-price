@@ -52,11 +52,11 @@ func (is *instrumentservice) FetchEquityStockDetails(ctx context.Context) ([]dto
 
 func (is *instrumentservice) FetchDerivativeStockDetails(ctx context.Context, symbol string) ([]dto.Instrument, error) {
 	// todo: fetch the token for the symbol
-	underlyongToken, err := is.db.GetInstrumentToken(ctx, symbol)
+	underlyingToken, err := is.db.GetInstrumentToken(ctx, symbol)
 	if err != nil {
 		return nil, fmt.Errorf("error fetching derivatives for %s", symbol)
 	}
-	derivativeTokens, err := is.db.GetTokensAgainstToken(ctx, fmt.Sprint(underlyongToken), utility.DERIVATIVES)
+	derivativeTokens, err := is.db.GetTokensAgainstToken(ctx, fmt.Sprint(underlyingToken), utility.DERIVATIVES)
 	if err != nil {
 		return nil, err
 	}

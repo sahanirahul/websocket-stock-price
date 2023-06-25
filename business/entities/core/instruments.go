@@ -66,3 +66,11 @@ type WebsocketSubscription struct {
 	DataType       string  `json:"data_type"`
 	Tokens         []int64 `json:"tokens"`
 }
+
+type WebsocketPriceEvent struct {
+	DataType string `json:"data_type"`
+	Payload  struct {
+		Token int64   `json:"token"`
+		Price float64 `json:"price"`
+	} `json:"payload"`
+}

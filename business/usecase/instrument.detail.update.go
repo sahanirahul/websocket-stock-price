@@ -25,7 +25,7 @@ func (is *instrumentservice) UpdateEquityStockDetails(ctx context.Context) error
 	for _, val := range underlyingsEQ {
 		if prevTokens.Set == nil || prevTokens.Set.Size() == 0 || !prevTokens.Set.Contains(val.Token) {
 			// subscribe to websocket for this instrument
-			is.websocket.AddSubscriptionRequest(core.WebsocketSubscription{MessageCommand: "subscribe", DataType: "quote", Tokens: []int64{val.Token}})
+			is.websocket.AddSubscriptionRequest(core.WebsocketSubscription{MessageCommand: utility.MsgCommandSubscribe, DataType: utility.DataTypeQuote, Tokens: []int64{val.Token}})
 			// create entry
 			err = is.db.InsertInstrument(ctx, val)
 			if err != nil {
@@ -73,7 +73,7 @@ func (is *instrumentservice) updateDerivativeStockDetail(ctx context.Context, un
 	for _, val := range underlyingsDvts {
 		if prevDvtsTokens.Set == nil || prevDvtsTokens.Set.Size() == 0 || !prevDvtsTokens.Set.Contains(val.Token) {
 			// subscribe to websocket for this instrument
-			is.websocket.AddSubscriptionRequest(core.WebsocketSubscription{MessageCommand: "subscribe", DataType: "quote", Tokens: []int64{val.Token}})
+			is.websocket.AddSubscriptionRequest(core.WebsocketSubscription{MessageCommand: utility.MsgCommandSubscribe, DataType: utility.DataTypeQuote, Tokens: []int64{val.Token}})
 			// create entry
 			err = is.db.InsertInstrument(ctx, val)
 			if err != nil {
@@ -115,5 +115,5 @@ func (is *instrumentservice) updateTokenSet(ctx context.Context, itoken, itype s
 			listOfTokensToUnsubscribe = append(listOfTokensToUnsubscribe, t)
 		}
 	}
-	is.websocket.AddSubscriptionRequest(core.WebsocketSubscription{MessageCommand: "unsubscribe", DataType: "quote", Tokens: listOfTokensToUnsubscribe})
+	is.websocket.AddSubscriptionRequest(core.WebsocketSubscription{MessageCommand: utility.MsgCommandUnSubscribe, DataType: utility.DataTypeQuote, Tokens: listOfTokensToUnsubscribe})
 }

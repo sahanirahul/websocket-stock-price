@@ -49,6 +49,10 @@ func (ir *instrumentrepo) DeleteInstrument(ctx context.Context, instrument core.
 	if err != nil {
 		return err
 	}
+	err = ir.delete(ctx, instrument.Symbol)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

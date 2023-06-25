@@ -16,7 +16,8 @@ import (
 )
 
 func provideInstrumentRouter() *instrumentRouter {
-	instrumentService := usecase.NewInstrumentService(http.NewInstrumentHttpRepo(), websocket.NewWebsocketRepo(), db.NewInstrumentRepo())
+	dbrepo := db.NewInstrumentRepo()
+	instrumentService := usecase.NewInstrumentService(http.NewInstrumentHttpRepo(), websocket.NewWebsocketRepo(dbrepo), dbrepo)
 	err := instrumentService.UpdateEquityStockDetails(context.Background())
 	if err != nil {
 		fmt.Println("unable to run initial stock update job")

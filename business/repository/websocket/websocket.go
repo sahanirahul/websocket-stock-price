@@ -8,6 +8,7 @@ import (
 	"sensibull/stocks-api/business/entities/core"
 	"sensibull/stocks-api/business/interfaces/irepo"
 	"sensibull/stocks-api/business/repository/websocket/connection"
+	"sensibull/stocks-api/business/utility"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -18,22 +19,23 @@ import (
 const websocketUrl string = "wss://prototype.sbulltech.com/api/ws"
 
 type websocketrepo struct {
+	db irepo.IInstrumentRepo
 }
 
 var once sync.Once
 var repo *websocketrepo
 
-func NewWebsocketRepo() irepo.IWebsocketRepo {
+func NewWebsocketRepo(db irepo.IInstrumentRepo) irepo.IWebsocketRepo {
 	once.Do(func() {
 		subscriptionChan = make(chan core.WebsocketSubscription, 10)
-		repo = &websocketrepo{}
+		repo = &websocketrepo{db: db}
 		go repo.updateSubscription(context.Background())
 		go repo.wsEventListener(context.Background())
 	})
 	return repo
 }
 
-func (cr *websocketrepo) wsEventListener(ctx context.Context) error {
+func (wr *websocketrepo) wsEventListener(ctx context.Context) error {
 	conn, err := connection.GetWebSocketConnection(websocketUrl, false)
 	if err != nil {
 		log.Fatal("unable to get websocket connection")
@@ -47,13 +49,33 @@ func (cr *websocketrepo) wsEventListener(ctx context.Context) error {
 		}
 		// Handle the received message
 		fmt.Println("Received message:", string(message))
+		var event core.WebsocketPriceEvent
+		err = json.Unmarshal(message, &event)
+		if err != nil {
+			log.Println("WebSocket unmarshal error:", err)
+			continue
+		}
+		if event.DataType == utility.DataTypeQuote {
+			ctx := context.Background()
+			ins, err := wr.db.GetInstrument(ctx, event.Payload.Token)
+			if err != nil {
+				log.Println("error fetching instrument for price update:", err)
+				continue
+			}
+			ins.Price = event.Payload.Price
+			err = wr.db.UpdateInstrument(ctx, ins)
+			if err != nil {
+				log.Println("error updating instrument price:", err)
+				continue
+			}
+		}
 	}
 }
 
 var subscriptionChan chan core.WebsocketSubscription
 var retryCount atomic.Int32
 
-func (cr *websocketrepo) updateSubscription(ctx context.Context) error {
+func (wr *websocketrepo) updateSubscription(ctx context.Context) error {
 	conn, err := connection.GetWebSocketConnection(websocketUrl, false)
 	if err != nil {
 		log.Fatal("unable to get websocket connection")
@@ -65,6 +87,7 @@ func (cr *websocketrepo) updateSubscription(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
+		fmt.Println(string(payload))
 		err = conn.WriteMessage(websocket.TextMessage, payload)
 		if err != nil {
 			count := retryCount.Add(1)
@@ -85,6 +108,6 @@ func (cr *websocketrepo) updateSubscription(ctx context.Context) error {
 
 }
 
-func (cr *websocketrepo) AddSubscriptionRequest(req core.WebsocketSubscription) {
+func (wr *websocketrepo) AddSubscriptionRequest(req core.WebsocketSubscription) {
 	subscriptionChan <- req
 }
