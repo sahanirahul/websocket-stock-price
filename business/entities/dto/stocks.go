@@ -6,6 +6,6 @@ type Instrument struct {
 	Token          int64   `json:"token"`
 	InstrumentType string  `json:"instrument_type"`
 	Expiry         string  `json:"expiry"`
-	Strike         int64   `json:"strike"`
+	Strike         float64 `json:"strike"`
 	Price          float64 `json:"price"`
 }
