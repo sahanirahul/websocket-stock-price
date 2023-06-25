@@ -5,11 +5,23 @@ import (
 	"fmt"
 	"net/http"
 	"sensibull/stocks-api/business/entities/dto"
+	"sensibull/stocks-api/business/interfaces/irepo"
 	"sensibull/stocks-api/utils/logging"
+	"sync"
 	"time"
 )
 
 type httprepo struct {
+}
+
+var once sync.Once
+var repo *httprepo
+
+func NewInstrumentHttpRepo() irepo.IInstrumentHttpRepo {
+	once.Do(func() {
+		repo = &httprepo{}
+	})
+	return repo
 }
 
 func (cr *httprepo) GetUnderLyings(ctx context.Context) ([]dto.Instrument, error) {

@@ -1,4 +1,4 @@
-package dto
+package core
 
 type Instrument struct {
 	Symbol         string  `json:"symbol"`
