@@ -1,6 +1,9 @@
 package core
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"sensibull/stocks-api/business/entities/dto"
+)
 
 type Instrument struct {
 	Symbol         string  `json:"symbol"`
@@ -18,4 +21,34 @@ func (ins Instrument) MarshalBinary() (data []byte, err error) {
 
 func (ins *Instrument) UnmarshalBinary(data []byte) error {
 	return json.Unmarshal(data, &ins)
+}
+
+func GetDtoInstrument(ci Instrument) dto.Instrument {
+	return dto.Instrument{
+		Symbol:         ci.Symbol,
+		Token:          ci.Token,
+		Underlying:     ci.Underlying,
+		Expiry:         ci.Expiry,
+		Strike:         ci.Strike,
+		Price:          ci.Price,
+		InstrumentType: ci.InstrumentType,
+	}
+}
+
+func GetDtoInstruments(coreInstruments []Instrument) []dto.Instrument {
+	dtos := make([]dto.Instrument, len(coreInstruments))
+	for _, val := range coreInstruments {
+		dtos = append(dtos, GetDtoInstrument(val))
+	}
+	return dtos
+}
+
+type Tokens []int64
+
+func (tks Tokens) MarshalBinary() (data []byte, err error) {
+	return json.Marshal(tks)
+}
+
+func (tks *Tokens) UnmarshalBinary(data []byte) error {
+	return json.Unmarshal(data, &tks)
 }

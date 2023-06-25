@@ -9,7 +9,9 @@ import (
 type IInstrumentRepo interface {
 	UpsertInstrument(ctx context.Context, instrument core.Instrument) error
 	DeleteInstrument(ctx context.Context, instrument core.Instrument) error
-	GetInstrument(ctx context.Context, instrument core.Instrument) (core.Instrument, error)
+	GetInstrument(ctx context.Context, token int64) (core.Instrument, error)
+	GetTokensForSymbol(ctx context.Context, isymbol, itype string) (core.Tokens, error)
+	SaveTokenForSymbol(ctx context.Context, isymbol, itype string, tokens core.Tokens) error
 }
 
 type IInstrumentHttpRepo interface {
