@@ -9,6 +9,7 @@ import (
 type IInstrumentRepo interface {
 	UpsertInstrument(ctx context.Context, instrument core.Instrument) error
 	DeleteInstrument(ctx context.Context, instrument core.Instrument) error
+	GetInstrument(ctx context.Context, instrument core.Instrument) (core.Instrument, error)
 }
 
 type IInstrumentHttpRepo interface {
