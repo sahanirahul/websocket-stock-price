@@ -17,14 +17,20 @@ type cache struct {
 
 var ErrInvalid error = errors.New("invalid_request")
 
-func (che *cache) encache(ctx context.Context, key string, obj interface{}, dur time.Duration) error {
+func (che *cache) encache(ctx context.Context, key string, obj interface{}, dur time.Duration, keepttl bool) error {
 	if obj == nil || len(key) == 0 {
 		return ErrInvalid
 	}
 	if _, ok := obj.(encoding.BinaryMarshaler); !ok {
 		obj, _ = json.Marshal(obj)
 	}
-	err := che.redisCli.Set(ctx, key, obj, dur).Err()
+	var err error
+	if keepttl {
+		err = che.redisCli.Set(ctx, key, obj, redis.KeepTTL).Err()
+	} else {
+		err = che.redisCli.Set(ctx, key, obj, dur).Err()
+	}
+
 	if err != nil {
 		logging.Logger.WriteLogs(ctx, "cache-write-failed", logging.ErrorLevel, logging.Fields{"error": err, "key": key, "data": obj})
 		return err

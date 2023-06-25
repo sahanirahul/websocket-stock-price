@@ -5,6 +5,7 @@ go 1.18
 require (
 	github.com/emirpasic/gods v1.18.1
 	github.com/gin-gonic/gin v1.9.0
+	github.com/gorilla/websocket v1.5.0
 	github.com/lib/pq v1.10.9
 	github.com/redis/go-redis/v9 v9.0.5
 	github.com/robfig/cron v1.2.0

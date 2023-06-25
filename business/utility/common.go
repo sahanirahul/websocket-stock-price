@@ -10,3 +10,9 @@ func MapObjectToAnother(fromObj interface{}, toObj interface{}) error {
 	err = json.Unmarshal(b, toObj)
 	return err
 }
+
+const (
+	TOKENFORALLUNDERLYING = "ALLUNDERYINGS"
+	EQUITY                = "EQ"
+	DERIVATIVES           = "DERIVATIVES"
+)

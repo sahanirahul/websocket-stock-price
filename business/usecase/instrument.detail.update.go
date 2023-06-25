@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sensibull/stocks-api/business/entities/core"
+	"sensibull/stocks-api/business/utility"
 	"sync"
 )
 
@@ -15,23 +16,18 @@ func (is *instrumentservice) UpdateEquityStockDetails(ctx context.Context) error
 		// retry mechanism here
 		return err
 	}
-	prevTokens, err := is.db.GetTokensAgainstToken(ctx, TOKENFORALLUNDERLYING, EQUITY)
+	prevTokens, err := is.db.GetTokensAgainstToken(ctx, utility.TOKENFORALLUNDERLYING, utility.EQUITY)
 	if err != nil {
 		// retry mechanism here
 		return err
 	}
-	is.updateTokenSet(ctx, TOKENFORALLUNDERLYING, EQUITY, underlyingsEQ, &prevTokens)
+	is.updateTokenSet(ctx, utility.TOKENFORALLUNDERLYING, utility.EQUITY, underlyingsEQ, &prevTokens)
 	for _, val := range underlyingsEQ {
 		if prevTokens.Set == nil || prevTokens.Set.Size() == 0 || !prevTokens.Set.Contains(val.Token) {
 			// subscribe to websocket for this instrument
-			err = is.websocket.Subscribe(ctx, []int64{val.Token})
-			if err != nil {
-				//log
-				// retry
-				continue
-			}
+			is.websocket.AddSubscriptionRequest(core.WebsocketSubscription{MessageCommand: "subscribe", DataType: "quote", Tokens: []int64{val.Token}})
 			// create entry
-			err = is.db.UpsertInstrument(ctx, val)
+			err = is.db.InsertInstrument(ctx, val)
 			if err != nil {
 				//log
 				//retry
@@ -44,7 +40,7 @@ func (is *instrumentservice) UpdateEquityStockDetails(ctx context.Context) error
 
 // should run every 1min
 func (is *instrumentservice) UpdateDerivativeStockDetails(ctx context.Context) error {
-	curEqTokens, err := is.db.GetTokensAgainstToken(ctx, TOKENFORALLUNDERLYING, EQUITY)
+	curEqTokens, err := is.db.GetTokensAgainstToken(ctx, utility.TOKENFORALLUNDERLYING, utility.EQUITY)
 	if err != nil {
 		// retry mechanism here
 		return err
@@ -68,23 +64,18 @@ func (is *instrumentservice) updateDerivativeStockDetail(ctx context.Context, un
 		// retry mechanism here
 		return err
 	}
-	prevDvtsTokens, err := is.db.GetTokensAgainstToken(ctx, fmt.Sprint(underlyingToken), DERIVATIVES)
+	prevDvtsTokens, err := is.db.GetTokensAgainstToken(ctx, fmt.Sprint(underlyingToken), utility.DERIVATIVES)
 	if err != nil {
 		// retry mechanism here
 		return err
 	}
-	go is.updateTokenSet(ctx, fmt.Sprint(underlyingToken), DERIVATIVES, underlyingsDvts, &prevDvtsTokens)
+	go is.updateTokenSet(ctx, fmt.Sprint(underlyingToken), utility.DERIVATIVES, underlyingsDvts, &prevDvtsTokens)
 	for _, val := range underlyingsDvts {
 		if prevDvtsTokens.Set == nil || prevDvtsTokens.Set.Size() == 0 || !prevDvtsTokens.Set.Contains(val.Token) {
 			// subscribe to websocket for this instrument
-			err = is.websocket.Subscribe(ctx, []int64{val.Token})
-			if err != nil {
-				//log
-				// retry
-				continue
-			}
+			is.websocket.AddSubscriptionRequest(core.WebsocketSubscription{MessageCommand: "subscribe", DataType: "quote", Tokens: []int64{val.Token}})
 			// create entry
-			err = is.db.UpsertInstrument(ctx, val)
+			err = is.db.InsertInstrument(ctx, val)
 			if err != nil {
 				//log
 				//retry
@@ -124,9 +115,5 @@ func (is *instrumentservice) updateTokenSet(ctx context.Context, itoken, itype s
 			listOfTokensToUnsubscribe = append(listOfTokensToUnsubscribe, t)
 		}
 	}
-	err = is.websocket.UnSubscribe(ctx, listOfTokensToUnsubscribe)
-	if err != nil {
-		//retry mechanism here
-		//log the error
-	}
+	is.websocket.AddSubscriptionRequest(core.WebsocketSubscription{MessageCommand: "unsubscribe", DataType: "quote", Tokens: listOfTokensToUnsubscribe})
 }

@@ -18,7 +18,7 @@ func init() {
 	pwd, _ := os.Getwd()
 	os.Setenv("APP", app)
 	if len(os.Getenv("PORT")) == 0 {
-		os.Setenv("PORT", "9000")
+		os.Setenv("PORT", "19093")
 	}
 	if len(os.Getenv("CONFIGPATH")) == 0 {
 		os.Setenv("CONFIGPATH", path.Join(pwd, "config/config.local.json"))

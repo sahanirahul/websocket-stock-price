@@ -7,6 +7,7 @@ import (
 	"sensibull/stocks-api/business/entities/dto"
 	"sensibull/stocks-api/business/interfaces/irepo"
 	"sensibull/stocks-api/business/interfaces/iusecase"
+	"sensibull/stocks-api/business/utility"
 	"sync"
 )
 
@@ -15,12 +16,6 @@ type instrumentservice struct {
 	websocket irepo.IWebsocketRepo
 	db        irepo.IInstrumentRepo
 }
-
-const (
-	TOKENFORALLUNDERLYING = "ALLUNDERYINGS"
-	EQUITY                = "EQ"
-	DERIVATIVES           = "DERIVATIVES"
-)
 
 var once sync.Once
 var service *instrumentservice
@@ -37,7 +32,7 @@ func NewInstrumentService(httpir irepo.IInstrumentHttpRepo, websocket irepo.IWeb
 }
 
 func (is *instrumentservice) FetchEquityStockDetails(ctx context.Context) ([]dto.Instrument, error) {
-	tokens, err := is.db.GetTokensAgainstToken(ctx, TOKENFORALLUNDERLYING, EQUITY)
+	tokens, err := is.db.GetTokensAgainstToken(ctx, utility.TOKENFORALLUNDERLYING, utility.EQUITY)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +56,7 @@ func (is *instrumentservice) FetchDerivativeStockDetails(ctx context.Context, sy
 	if err != nil {
 		return nil, fmt.Errorf("error fetching derivatives for %s", symbol)
 	}
-	derivativeTokens, err := is.db.GetTokensAgainstToken(ctx, fmt.Sprint(underlyongToken), DERIVATIVES)
+	derivativeTokens, err := is.db.GetTokensAgainstToken(ctx, fmt.Sprint(underlyongToken), utility.DERIVATIVES)
 	if err != nil {
 		return nil, err
 	}

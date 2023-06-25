@@ -60,3 +60,9 @@ func (tks *Tokens) MarshalBinary() (data []byte, err error) {
 func (tks *Tokens) UnmarshalBinary(data []byte) error {
 	return json.Unmarshal(data, tks)
 }
+
+type WebsocketSubscription struct {
+	MessageCommand string  `json:"msg_command"`
+	DataType       string  `json:"data_type"`
+	Tokens         []int64 `json:"tokens"`
+}

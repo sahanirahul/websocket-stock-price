@@ -6,7 +6,8 @@ import (
 )
 
 type IInstrumentRepo interface {
-	UpsertInstrument(ctx context.Context, instrument core.Instrument) error
+	InsertInstrument(ctx context.Context, instrument core.Instrument) error
+	UpdateInstrument(ctx context.Context, instrument core.Instrument) error
 	DeleteInstrument(ctx context.Context, instrument core.Instrument) error
 	GetInstrument(ctx context.Context, token int64) (core.Instrument, error)
 	GetInstrumentToken(ctx context.Context, symbol string) (int64, error)
@@ -20,7 +21,5 @@ type IInstrumentHttpRepo interface {
 }
 
 type IWebsocketRepo interface {
-	WSEventListener(ctx context.Context) error
-	Subscribe(ctx context.Context, tokens []int64) error
-	UnSubscribe(ctx context.Context, tokens []int64) error
+	AddSubscriptionRequest(req core.WebsocketSubscription)
 }

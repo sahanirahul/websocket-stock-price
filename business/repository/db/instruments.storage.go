@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"fmt"
 	"sensibull/stocks-api/business/entities/core"
 	"sensibull/stocks-api/business/interfaces/irepo"
 	"sensibull/stocks-api/business/utility"
@@ -26,21 +27,29 @@ func NewInstrumentRepo() irepo.IInstrumentRepo {
 	return repo
 }
 
-func (ir *instrumentrepo) UpsertInstrument(ctx context.Context, instrument core.Instrument) error {
+func (ir *instrumentrepo) InsertInstrument(ctx context.Context, instrument core.Instrument) error {
 	dur := 2 * time.Minute
-	if instrument.InstrumentType == "EQ" {
+	if instrument.InstrumentType == utility.EQUITY {
 		dur = 20 * time.Minute
 	}
 	// update symbol -> token mapping in db here
-	err := ir.encache(ctx, instrument.Symbol, instrument.Token, 0)
+	err := ir.encache(ctx, instrument.Symbol, instrument.Token, dur, false)
 	if err != nil {
 		logging.Logger.WriteLogs(ctx, "error_mapping_symbol_to_token", logging.ErrorLevel, logging.Fields{"error": err})
 	}
-	return ir.encache(ctx, utility.GetInstrumentKey(instrument.Token), instrument, dur)
+	return ir.encache(ctx, utility.GetInstrumentKey(instrument.Token), instrument, dur, false)
 }
 
 func (ir *instrumentrepo) DeleteInstrument(ctx context.Context, instrument core.Instrument) error {
-	return ir.delete(ctx, utility.GetInstrumentKey(instrument.Token))
+	err := ir.delete(ctx, utility.GetInstrumentKey(instrument.Token))
+	if err != nil {
+		return err
+	}
+	err = ir.delete(ctx, utility.GetTokenKey(fmt.Sprint(instrument.Token), utility.DERIVATIVES))
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (ir *instrumentrepo) GetInstrument(ctx context.Context, token int64) (core.Instrument, error) {
@@ -62,7 +71,11 @@ func (ir *instrumentrepo) GetTokensAgainstToken(ctx context.Context, itoken stri
 }
 
 func (ir *instrumentrepo) SaveTokensAgainstToken(ctx context.Context, itoken, itype string, tokens core.Tokens) error {
-	err := ir.encache(ctx, utility.GetTokenKey(itoken, itype), tokens, 0)
+	dur := 2 * time.Minute
+	if itype == utility.EQUITY {
+		dur = 20 * time.Minute
+	}
+	err := ir.encache(ctx, utility.GetTokenKey(itoken, itype), tokens, dur, false)
 	if err != nil {
 		return err
 	}
@@ -77,4 +90,8 @@ func (ir *instrumentrepo) GetInstrumentToken(ctx context.Context, symbol string)
 		return 0, err
 	}
 	return token, nil
+}
+
+func (ir *instrumentrepo) UpdateInstrument(ctx context.Context, instrument core.Instrument) error {
+	return ir.encache(ctx, utility.GetInstrumentKey(instrument.Token), instrument, 0, true)
 }

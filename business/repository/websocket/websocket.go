@@ -2,9 +2,20 @@ package websocket
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"log"
+	"sensibull/stocks-api/business/entities/core"
 	"sensibull/stocks-api/business/interfaces/irepo"
+	"sensibull/stocks-api/business/repository/websocket/connection"
 	"sync"
+	"sync/atomic"
+	"time"
+
+	"github.com/gorilla/websocket"
 )
+
+const websocketUrl string = "wss://prototype.sbulltech.com/api/ws"
 
 type websocketrepo struct {
 }
@@ -14,18 +25,66 @@ var repo *websocketrepo
 
 func NewWebsocketRepo() irepo.IWebsocketRepo {
 	once.Do(func() {
+		subscriptionChan = make(chan core.WebsocketSubscription, 10)
 		repo = &websocketrepo{}
+		go repo.updateSubscription(context.Background())
+		go repo.wsEventListener(context.Background())
 	})
 	return repo
 }
 
-func (cr *websocketrepo) WSEventListener(ctx context.Context) error {
-	return nil
+func (cr *websocketrepo) wsEventListener(ctx context.Context) error {
+	conn, err := connection.GetWebSocketConnection(websocketUrl, false)
+	if err != nil {
+		log.Fatal("unable to get websocket connection")
+	}
+	for {
+		// Read message from WebSocket connection
+		_, message, err := conn.ReadMessage()
+		if err != nil {
+			log.Println("WebSocket read error:", err)
+			continue
+		}
+		// Handle the received message
+		fmt.Println("Received message:", string(message))
+	}
 }
 
-func (cr *websocketrepo) Subscribe(ctx context.Context, tokens []int64) error {
-	return nil
+var subscriptionChan chan core.WebsocketSubscription
+var retryCount atomic.Int32
+
+func (cr *websocketrepo) updateSubscription(ctx context.Context) error {
+	conn, err := connection.GetWebSocketConnection(websocketUrl, false)
+	if err != nil {
+		log.Fatal("unable to get websocket connection")
+		return err
+	}
+	for {
+		req := <-subscriptionChan
+		payload, err := json.Marshal(req)
+		if err != nil {
+			return err
+		}
+		err = conn.WriteMessage(websocket.TextMessage, payload)
+		if err != nil {
+			count := retryCount.Add(1)
+			if count > 3 || websocket.IsCloseError(err, websocket.CloseNormalClosure) {
+				conn, err = connection.GetWebSocketConnection(websocketUrl, true)
+				if err != nil {
+					log.Fatal("unable to get websocket connection in write")
+					return err
+				}
+				retryCount.Add(-1 * count)
+			} else {
+				log.Println("WebSocket write error:", err)
+				time.Sleep(time.Second)
+			}
+			continue
+		}
+	}
+
 }
-func (cr *websocketrepo) UnSubscribe(ctx context.Context, tokens []int64) error {
-	return nil
+
+func (cr *websocketrepo) AddSubscriptionRequest(req core.WebsocketSubscription) {
+	subscriptionChan <- req
 }
