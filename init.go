@@ -5,6 +5,7 @@ import (
 	"os"
 	"path"
 	"sensibull/stocks-api/bootconfig"
+	"sensibull/stocks-api/cron"
 	"sensibull/stocks-api/db"
 	"sensibull/stocks-api/utils/logging"
 )
@@ -32,4 +33,5 @@ func init() {
 	db.Init()
 
 	logging.NewLogger()
+	cron.NewCron()
 }
