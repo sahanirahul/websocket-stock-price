@@ -3,7 +3,6 @@ package websocket
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log"
 	"sensibull/stocks-api/business/entities/core"
 	"sensibull/stocks-api/business/interfaces/icore"
@@ -11,6 +10,9 @@ import (
 	"sensibull/stocks-api/business/repository/websocket/connection"
 	"sensibull/stocks-api/business/utility"
 	"sensibull/stocks-api/business/worker"
+	"sensibull/stocks-api/middleware"
+	"sensibull/stocks-api/middleware/corel"
+	"sensibull/stocks-api/utils/logging"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -32,44 +34,65 @@ func NewWebsocketRepo(db irepo.IInstrumentRepo) irepo.IWebsocketRepo {
 	once.Do(func() {
 		subscriptionChan = make(chan core.WebsocketSubscription, 100)
 		repo = &websocketrepo{db: db, pool: worker.NewWorkerPool(50, 100)}
-		go repo.updateSubscription(context.Background())
-		go repo.wsEventListener(context.Background())
+		go repo.updateSubscription()
+		go repo.wsEventListener()
 	})
 	return repo
 }
 
-func (wr *websocketrepo) wsEventListener(ctx context.Context) error {
-	for {
-		conn, err := connection.GetWebSocketConnection(websocketURL, false)
-		if err != nil {
-			log.Fatal("unable to get websocket connection")
+func (wr *websocketrepo) wsEventListener() error {
+	ctx := corel.CreateNewContext()
+	// adding recovery for websocket listener go routine
+	defer func() {
+		if err := recover(); err != nil {
+			middleware.Recover(ctx, err)
 		}
+	}()
+	newConn := false
+
+	for {
+		// new context for each message
+		ctx = corel.CreateNewContext()
+		conn, _ := connection.GetWebSocketConnection(websocketURL, newConn)
+		if conn == nil {
+			logging.Logger.WriteLogs(ctx, "error_getting_websocket_connection_read", logging.ErrorLevel, logging.Fields{})
+			// reset the connection
+			val := connectionRetryCount.Add(1)
+			if val > 5 {
+				logging.Logger.WriteLogs(ctx, "max_connection_retry_limit_exceeded", logging.ErrorLevel, logging.Fields{})
+				log.Fatal("not able to get websocket connection. shutting down server")
+			}
+			newConn = true
+			time.Sleep(time.Millisecond * 500)
+			continue
+		}
+		connectionRetryCount.Add(-1 * connectionRetryCount.Add(0))
+		newConn = false
 		// Read message from WebSocket connection
 		_, message, err := conn.ReadMessage()
 		if err != nil {
-			log.Println("WebSocket read error:", err)
+			logging.Logger.WriteLogs(ctx, "websocket_read_errror", logging.ErrorLevel, logging.Fields{"error": err})
 			continue
 		}
 		// Handle the received message
-		fmt.Println("Received message:", string(message))
+		// fmt.Println("Received message:", string(message))
 		var event core.WebsocketPriceEvent
 		err = json.Unmarshal(message, &event)
 		if err != nil {
-			log.Println("WebSocket unmarshal error:", err)
+			logging.Logger.WriteLogs(ctx, "webSocket_unmarshal_error", logging.ErrorLevel, logging.Fields{"error": err})
 			continue
 		}
 		if event.DataType == utility.DataTypeQuote {
 			job := core.NewJob(func() {
-				ctx := context.Background()
 				ins, err := wr.db.GetInstrument(ctx, event.Payload.Token)
 				if err != nil {
-					log.Println("error fetching instrument for price update:", err)
+					logging.Logger.WriteLogs(ctx, "error_fetching_instrument_detail_for_price_update", logging.ErrorLevel, logging.Fields{"error": err})
 					return
 				}
 				ins.Price = event.Payload.Price
 				err = wr.db.UpdateInstrument(ctx, ins)
 				if err != nil {
-					log.Println("error updating instrument price:", err)
+					logging.Logger.WriteLogs(ctx, "error_updating_instrument_price", logging.ErrorLevel, logging.Fields{"error": err, "instrument": ins})
 					return
 				}
 			})
@@ -79,35 +102,32 @@ func (wr *websocketrepo) wsEventListener(ctx context.Context) error {
 }
 
 var subscriptionChan chan core.WebsocketSubscription
-var retryCount atomic.Int32
+var connectionRetryCount atomic.Int32
 
-func (wr *websocketrepo) updateSubscription(ctx context.Context) error {
-	conn, err := connection.GetWebSocketConnection(websocketURL, false)
-	if err != nil {
-		log.Fatal("unable to get websocket connection")
-		return err
-	}
+func (wr *websocketrepo) updateSubscription() error {
+	ctx := corel.CreateNewContext()
+	// adding recovery for websocket update subscription
+	defer func() {
+		if err := recover(); err != nil {
+			middleware.Recover(ctx, err)
+		}
+	}()
 	for {
 		req := <-subscriptionChan
+		conn, _ := connection.GetWebSocketConnection(websocketURL, false)
+		if conn == nil {
+			logging.Logger.WriteLogs(context.Background(), "error_getting_websocket_connection_write", logging.ErrorLevel, logging.Fields{})
+			time.Sleep(time.Second)
+			continue
+		}
 		payload, err := json.Marshal(req)
 		if err != nil {
 			return err
 		}
-		fmt.Println(string(payload))
 		err = conn.WriteMessage(websocket.TextMessage, payload)
 		if err != nil {
-			count := retryCount.Add(1)
-			if count > 3 || websocket.IsCloseError(err, websocket.CloseNormalClosure) {
-				conn, err = connection.GetWebSocketConnection(websocketURL, true)
-				if err != nil {
-					log.Fatal("unable to get websocket connection in write")
-					return err
-				}
-				retryCount.Add(-1 * count)
-			} else {
-				log.Println("WebSocket write error:", err)
-				time.Sleep(time.Second)
-			}
+			logging.Logger.WriteLogs(context.Background(), "websocket_write_error", logging.ErrorLevel, logging.Fields{"error": err})
+			time.Sleep(time.Second)
 			continue
 		}
 	}

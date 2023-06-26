@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"sensibull/stocks-api/business/entities/core"
 	"sensibull/stocks-api/business/interfaces/icore"
+	"sensibull/stocks-api/middleware"
+	"sensibull/stocks-api/middleware/corel"
 )
 
 type worker struct {
@@ -23,6 +25,13 @@ func (w *worker) start() {
 }
 
 func (w *worker) run(workerId int) {
+	ctx := corel.CreateNewContext()
+	// adding recovery for worker go routines
+	defer func() {
+		if err := recover(); err != nil {
+			middleware.Recover(ctx, err)
+		}
+	}()
 	fmt.Println("starting worker ", workerId)
 	for {
 		job := <-w.jobs

@@ -15,5 +15,4 @@ type IInstrumentDetailManager interface {
 	// the below functions will be used to update the latest listing and update websocket subscription
 	UpdateEquityStockDetails(ctx context.Context) error
 	UpdateDerivativeStockDetails(ctx context.Context) error
-	UpdateInstrumentPrice(ctx context.Context) error
 }

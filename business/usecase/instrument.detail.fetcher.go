@@ -9,6 +9,7 @@ import (
 	"sensibull/stocks-api/business/interfaces/irepo"
 	"sensibull/stocks-api/business/interfaces/iusecase"
 	"sensibull/stocks-api/business/utility"
+	"sensibull/stocks-api/utils/logging"
 	"sync"
 )
 
@@ -46,7 +47,8 @@ func (is *instrumentservice) FetchEquityStockDetails(ctx context.Context) ([]dto
 	for _, token := range tokens.Set.Values() {
 		ins, err := is.db.GetInstrument(ctx, int64(token.(float64)))
 		if err != nil {
-			return nil, nil
+			logging.Logger.WriteLogs(ctx, "error_fetching_equity_instrument_from_token", logging.ErrorLevel, logging.Fields{"error": err})
+			continue
 		}
 		instruments = append(instruments, ins)
 	}
@@ -70,7 +72,8 @@ func (is *instrumentservice) FetchDerivativeStockDetails(ctx context.Context, sy
 	for _, token := range derivativeTokens.Set.Values() {
 		ins, err := is.db.GetInstrument(ctx, int64(token.(float64)))
 		if err != nil {
-			return nil, nil
+			logging.Logger.WriteLogs(ctx, "error_fetching_derivative_instrumnet_from_token", logging.ErrorLevel, logging.Fields{"error": err})
+			continue
 		}
 		instruments = append(instruments, ins)
 	}

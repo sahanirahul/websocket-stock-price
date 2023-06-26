@@ -1,7 +1,8 @@
 package connection
 
 import (
-	"log"
+	"context"
+	"sensibull/stocks-api/utils/logging"
 	"sync"
 
 	"github.com/gorilla/websocket"
@@ -15,14 +16,14 @@ func GetWebSocketConnection(websocketURL string, establishNewConn bool) (*websoc
 	once.Do(func() {
 		conn, _, err := websocket.DefaultDialer.Dial(websocketURL, nil)
 		if err != nil {
-			log.Fatal("WebSocket connection error:", err)
+			logging.Logger.WriteLogs(context.Background(), "error_connecting_websocket_server", logging.ErrorLevel, logging.Fields{"error": err, "url": websocketURL})
 		}
 		webSocketConn = conn
 	})
 	if establishNewConn {
 		conn, _, err := websocket.DefaultDialer.Dial(websocketURL, nil)
 		if err != nil {
-			log.Fatal("WebSocket connection error:", err)
+			logging.Logger.WriteLogs(context.Background(), "error_connecting_websocket_server", logging.ErrorLevel, logging.Fields{"error": err, "url": websocketURL})
 		}
 		webSocketConn = conn
 	}

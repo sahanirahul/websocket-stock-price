@@ -40,7 +40,7 @@ func (che *cache) encache(ctx context.Context, key string, obj interface{}, dur 
 
 func (che *cache) delete(ctx context.Context, key string) error {
 	if len(key) == 0 {
-		return ErrInvalid
+		return nil
 	}
 	err := che.redisCli.Del(ctx, key).Err()
 	if err == nil || err == redis.Nil {
@@ -51,7 +51,7 @@ func (che *cache) delete(ctx context.Context, key string) error {
 
 func (che *cache) read(ctx context.Context, key string, dest interface{}) error {
 	if len(key) == 0 {
-		return ErrInvalid
+		return nil
 	}
 	res := che.redisCli.Get(ctx, key)
 	if res.Err() == redis.Nil {

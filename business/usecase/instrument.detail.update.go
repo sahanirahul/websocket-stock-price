@@ -14,12 +14,12 @@ func (is *instrumentservice) UpdateEquityStockDetails(ctx context.Context) error
 	// fetch the equity instrument list
 	underlyingsEQ, err := is.httpir.GetUnderLyings(ctx)
 	if err != nil {
-		// retry mechanism here
+		logging.Logger.WriteLogs(ctx, "error_fetching_underlying_http", logging.ErrorLevel, logging.Fields{"error": err})
 		return err
 	}
 	prevTokens, err := is.db.GetTokensAgainstToken(ctx, utility.TOKENFORALLUNDERLYING, utility.EQUITY)
 	if err != nil {
-		// retry mechanism here
+		logging.Logger.WriteLogs(ctx, "error_getting_mapped_tokens_equity", logging.ErrorLevel, logging.Fields{"error": err})
 		return err
 	}
 	go is.updateTokenSet(ctx, utility.TOKENFORALLUNDERLYING, utility.EQUITY, underlyingsEQ, &prevTokens)
@@ -30,8 +30,7 @@ func (is *instrumentservice) UpdateEquityStockDetails(ctx context.Context) error
 			// create entry
 			err = is.db.InsertInstrument(ctx, val)
 			if err != nil {
-				//log
-				//retry
+				logging.Logger.WriteLogs(ctx, "error_insert_equity_instruments", logging.ErrorLevel, logging.Fields{"error": err})
 				continue
 			}
 		}
@@ -43,7 +42,7 @@ func (is *instrumentservice) UpdateEquityStockDetails(ctx context.Context) error
 func (is *instrumentservice) UpdateDerivativeStockDetails(ctx context.Context) error {
 	curEqTokens, err := is.db.GetTokensAgainstToken(ctx, utility.TOKENFORALLUNDERLYING, utility.EQUITY)
 	if err != nil {
-		// retry mechanism here
+		logging.Logger.WriteLogs(ctx, "error_getting_mapped_tokens_equity_derivative", logging.ErrorLevel, logging.Fields{"error": err})
 		return err
 	}
 	var wg sync.WaitGroup
@@ -66,12 +65,12 @@ func (is *instrumentservice) updateDerivativeStockDetail(ctx context.Context, un
 	// fetch the derivatives instrument list
 	underlyingsDvts, err := is.httpir.GetUnderLyingDerivatives(ctx, underlyingToken)
 	if err != nil {
-		// retry mechanism here
+		logging.Logger.WriteLogs(ctx, "error_fetching_underlying_derivative_http", logging.ErrorLevel, logging.Fields{"error": err, "underlying_token": underlyingToken})
 		return err
 	}
 	prevDvtsTokens, err := is.db.GetTokensAgainstToken(ctx, fmt.Sprint(underlyingToken), utility.DERIVATIVES)
 	if err != nil {
-		// retry mechanism here
+		logging.Logger.WriteLogs(ctx, "error_fetching_mapped_tokens_for_derivatives", logging.ErrorLevel, logging.Fields{"error": err, "underlying_token": underlyingToken})
 		return err
 	}
 	go is.updateTokenSet(ctx, fmt.Sprint(underlyingToken), utility.DERIVATIVES, underlyingsDvts, &prevDvtsTokens)
@@ -79,11 +78,10 @@ func (is *instrumentservice) updateDerivativeStockDetail(ctx context.Context, un
 		if prevDvtsTokens.Set == nil || prevDvtsTokens.Set.Size() == 0 || !prevDvtsTokens.Set.Contains(val.Token) {
 			// subscribe to websocket for this instrument
 			is.websocket.AddSubscriptionRequest(core.WebsocketSubscription{MessageCommand: utility.MsgCommandSubscribe, DataType: utility.DataTypeQuote, Tokens: []int64{val.Token}})
-			// create entry
+			// create entry in db
 			err = is.db.InsertInstrument(ctx, val)
 			if err != nil {
-				//log
-				//retry
+				logging.Logger.WriteLogs(ctx, "insert-instrument-failed", logging.ErrorLevel, logging.Fields{"error": err, "instrument": val})
 				continue
 			}
 		}
@@ -91,20 +89,14 @@ func (is *instrumentservice) updateDerivativeStockDetail(ctx context.Context, un
 	return nil
 }
 
-func (is *instrumentservice) UpdateInstrumentPrice(ctx context.Context) error {
-	return nil
-}
-
 func (is *instrumentservice) updateTokenSet(ctx context.Context, itoken, itype string, instrumnets []core.Instrument, prevTokens *core.Tokens) {
 	currentTokens := core.NewTokenSet()
-
 	for _, val := range instrumnets {
 		currentTokens.Set.Add(val.Token)
 	}
 	err := is.db.SaveTokensAgainstToken(ctx, itoken, itype, currentTokens)
 	if err != nil {
-		//retry mechanism here
-		//log the error
+		logging.Logger.WriteLogs(ctx, "error-saving-tokens-against-token", logging.ErrorLevel, logging.Fields{"error": err, "currentTokens": currentTokens})
 	}
 	listOfTokensToUnsubscribe := []int64{}
 	if prevTokens.Set == nil || prevTokens.Set.Size() == 0 {
@@ -115,7 +107,7 @@ func (is *instrumentservice) updateTokenSet(ctx context.Context, itoken, itype s
 			t := int64(token.(float64))
 			err := is.db.DeleteInstrument(ctx, core.Instrument{Token: t})
 			if err != nil {
-				// log and continue
+				logging.Logger.WriteLogs(ctx, "instrument-delete-failed", logging.ErrorLevel, logging.Fields{"error": err, "token": t})
 			}
 			listOfTokensToUnsubscribe = append(listOfTokensToUnsubscribe, t)
 		}
