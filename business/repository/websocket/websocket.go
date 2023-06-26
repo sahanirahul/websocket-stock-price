@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"log"
 	"sensibull/stocks-api/business/entities/core"
+	"sensibull/stocks-api/business/interfaces/icore"
 	"sensibull/stocks-api/business/interfaces/irepo"
 	"sensibull/stocks-api/business/repository/websocket/connection"
 	"sensibull/stocks-api/business/utility"
+	"sensibull/stocks-api/business/worker"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -19,7 +21,8 @@ import (
 const websocketURL = "wss://prototype.sbulltech.com/api/ws"
 
 type websocketrepo struct {
-	db irepo.IInstrumentRepo
+	db   irepo.IInstrumentRepo
+	pool icore.IPool
 }
 
 var once sync.Once
@@ -27,8 +30,8 @@ var repo *websocketrepo
 
 func NewWebsocketRepo(db irepo.IInstrumentRepo) irepo.IWebsocketRepo {
 	once.Do(func() {
-		subscriptionChan = make(chan core.WebsocketSubscription, 10)
-		repo = &websocketrepo{db: db}
+		subscriptionChan = make(chan core.WebsocketSubscription, 100)
+		repo = &websocketrepo{db: db, pool: worker.NewWorkerPool(50, 100)}
 		go repo.updateSubscription(context.Background())
 		go repo.wsEventListener(context.Background())
 	})
@@ -56,18 +59,21 @@ func (wr *websocketrepo) wsEventListener(ctx context.Context) error {
 			continue
 		}
 		if event.DataType == utility.DataTypeQuote {
-			ctx := context.Background()
-			ins, err := wr.db.GetInstrument(ctx, event.Payload.Token)
-			if err != nil {
-				log.Println("error fetching instrument for price update:", err)
-				continue
-			}
-			ins.Price = event.Payload.Price
-			err = wr.db.UpdateInstrument(ctx, ins)
-			if err != nil {
-				log.Println("error updating instrument price:", err)
-				continue
-			}
+			job := core.NewJob(func() {
+				ctx := context.Background()
+				ins, err := wr.db.GetInstrument(ctx, event.Payload.Token)
+				if err != nil {
+					log.Println("error fetching instrument for price update:", err)
+					return
+				}
+				ins.Price = event.Payload.Price
+				err = wr.db.UpdateInstrument(ctx, ins)
+				if err != nil {
+					log.Println("error updating instrument price:", err)
+					return
+				}
+			})
+			wr.pool.AddJob(job)
 		}
 	}
 }

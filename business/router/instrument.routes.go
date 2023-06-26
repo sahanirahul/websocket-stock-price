@@ -10,6 +10,7 @@ import (
 	"sensibull/stocks-api/business/repository/http"
 	"sensibull/stocks-api/business/repository/websocket"
 	"sensibull/stocks-api/business/usecase"
+	"sensibull/stocks-api/business/worker"
 	"sync"
 
 	"github.com/gin-gonic/gin"
@@ -17,7 +18,7 @@ import (
 
 func provideInstrumentRouter() *instrumentRouter {
 	dbrepo := db.NewInstrumentRepo()
-	instrumentService := usecase.NewInstrumentService(http.NewInstrumentHttpRepo(), websocket.NewWebsocketRepo(dbrepo), dbrepo)
+	instrumentService := usecase.NewInstrumentService(http.NewInstrumentHttpRepo(), websocket.NewWebsocketRepo(dbrepo), dbrepo, worker.NewWorkerPool(50, 50))
 	err := instrumentService.UpdateEquityStockDetails(context.Background())
 	if err != nil {
 		fmt.Println("unable to run initial stock update job")

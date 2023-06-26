@@ -7,6 +7,7 @@ import (
 	"sensibull/stocks-api/business/repository/http"
 	"sensibull/stocks-api/business/repository/websocket"
 	"sensibull/stocks-api/business/usecase"
+	"sensibull/stocks-api/business/worker"
 	"sensibull/stocks-api/utils/logging"
 	"sync"
 
@@ -24,7 +25,7 @@ func NewCron() *cronn {
 	once.Do(func() {
 		cronObj = &cronn{}
 		dbrepo := db.NewInstrumentRepo()
-		cronObj.instrumentService = usecase.NewInstrumentService(http.NewInstrumentHttpRepo(), websocket.NewWebsocketRepo(dbrepo), dbrepo)
+		cronObj.instrumentService = usecase.NewInstrumentService(http.NewInstrumentHttpRepo(), websocket.NewWebsocketRepo(dbrepo), dbrepo, worker.NewWorkerPool(50, 50))
 	})
 	cronObj.startUnderlyingUpdate()
 	cronObj.startUnderlyingDerivativeUpdate()

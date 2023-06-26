@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sensibull/stocks-api/business/entities/core"
 	"sensibull/stocks-api/business/utility"
+	"sensibull/stocks-api/utils/logging"
 	"sync"
 )
 
@@ -21,7 +22,7 @@ func (is *instrumentservice) UpdateEquityStockDetails(ctx context.Context) error
 		// retry mechanism here
 		return err
 	}
-	is.updateTokenSet(ctx, utility.TOKENFORALLUNDERLYING, utility.EQUITY, underlyingsEQ, &prevTokens)
+	go is.updateTokenSet(ctx, utility.TOKENFORALLUNDERLYING, utility.EQUITY, underlyingsEQ, &prevTokens)
 	for _, val := range underlyingsEQ {
 		if prevTokens.Set == nil || prevTokens.Set.Size() == 0 || !prevTokens.Set.Contains(val.Token) {
 			// subscribe to websocket for this instrument
@@ -47,11 +48,15 @@ func (is *instrumentservice) UpdateDerivativeStockDetails(ctx context.Context) e
 	}
 	var wg sync.WaitGroup
 	for _, val := range curEqTokens.Set.Values() {
+		token := int64(val.(float64))
 		wg.Add(1)
-		go func(wg *sync.WaitGroup, token int64) {
+		is.pool.AddJob(core.NewJob(func() {
 			defer wg.Done()
-			is.updateDerivativeStockDetail(ctx, token)
-		}(&wg, int64(val.(float64)))
+			err := is.updateDerivativeStockDetail(ctx, token)
+			if err != nil {
+				logging.Logger.WriteLogs(ctx, "error_updating_derivatives", logging.ErrorLevel, logging.Fields{"error": err, "token": token})
+			}
+		}))
 	}
 	wg.Wait()
 	return nil

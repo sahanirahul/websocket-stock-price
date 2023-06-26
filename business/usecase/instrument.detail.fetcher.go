@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sensibull/stocks-api/business/entities/core"
 	"sensibull/stocks-api/business/entities/dto"
+	"sensibull/stocks-api/business/interfaces/icore"
 	"sensibull/stocks-api/business/interfaces/irepo"
 	"sensibull/stocks-api/business/interfaces/iusecase"
 	"sensibull/stocks-api/business/utility"
@@ -15,17 +16,19 @@ type instrumentservice struct {
 	httpir    irepo.IInstrumentHttpRepo
 	websocket irepo.IWebsocketRepo
 	db        irepo.IInstrumentRepo
+	pool      icore.IPool
 }
 
 var once sync.Once
 var service *instrumentservice
 
-func NewInstrumentService(httpir irepo.IInstrumentHttpRepo, websocket irepo.IWebsocketRepo, db irepo.IInstrumentRepo) iusecase.IStocksInstrumentsService {
+func NewInstrumentService(httpir irepo.IInstrumentHttpRepo, websocket irepo.IWebsocketRepo, db irepo.IInstrumentRepo, pool icore.IPool) iusecase.IStocksInstrumentsService {
 	once.Do(func() {
 		service = &instrumentservice{
 			httpir:    httpir,
 			websocket: websocket,
 			db:        db,
+			pool:      pool,
 		}
 	})
 	return service
