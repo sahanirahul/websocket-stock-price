@@ -2,6 +2,7 @@ package http
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"sensibull/stocks-api/business/entities/core"
@@ -28,6 +29,7 @@ func (cr *httprepo) GetUnderLyings(ctx context.Context) ([]core.Instrument, erro
 	// call 'https://prototype.sbulltech.com/api/underlyings' here
 	var response struct {
 		Status bool              `json:"success"`
+		Error  string            `json:"err_msg"`
 		Data   []core.Instrument `json:"payload"`
 	}
 	url := "https://prototype.sbulltech.com/api/underlyings"
@@ -37,8 +39,12 @@ func (cr *httprepo) GetUnderLyings(ctx context.Context) ([]core.Instrument, erro
 		logging.Logger.WriteLogs(ctx, "error_fetching_underlyings_http_request", logging.ErrorLevel, logging.Fields{"error": err})
 		return nil, err
 	}
+	logging.Logger.WriteLogs(ctx, "http_call_response_underlyings", logging.InfoLevel, logging.Fields{"response-body": response})
 	if status != http.StatusOK {
-		logging.Logger.WriteLogs(ctx, "status_code_not_ok", logging.ErrorLevel, logging.Fields{"statusCode": status})
+		logging.Logger.WriteLogs(ctx, "error_status_code_not_ok", logging.ErrorLevel, logging.Fields{"statusCode": status})
+	}
+	if !response.Status {
+		return nil, errors.New(response.Error)
 	}
 	return response.Data, nil
 }
@@ -47,6 +53,7 @@ func (cr *httprepo) GetUnderLyingDerivatives(ctx context.Context, underLyingToke
 	// call 'https://prototype.sbulltech.com/api/derivatives/{underlying_token}' here
 	var response struct {
 		Status bool              `json:"success"`
+		Error  string            `json:"err_msg"`
 		Data   []core.Instrument `json:"payload"`
 	}
 	url := fmt.Sprintf("https://prototype.sbulltech.com/api/derivatives/%d", underLyingToken)
@@ -56,8 +63,12 @@ func (cr *httprepo) GetUnderLyingDerivatives(ctx context.Context, underLyingToke
 		logging.Logger.WriteLogs(ctx, "error_fetching_derivative_http_request", logging.ErrorLevel, logging.Fields{"error": err})
 		return nil, err
 	}
+	logging.Logger.WriteLogs(ctx, "http_call_response_derivatives", logging.InfoLevel, logging.Fields{"response-body": response, "token": underLyingToken})
 	if status != http.StatusOK {
-		logging.Logger.WriteLogs(ctx, "status_code_not_ok", logging.ErrorLevel, logging.Fields{"statusCode": status})
+		logging.Logger.WriteLogs(ctx, "error_status_code_not_ok_derivatives", logging.ErrorLevel, logging.Fields{"statusCode": status})
+	}
+	if !response.Status {
+		return nil, errors.New(response.Error)
 	}
 	return response.Data, nil
 }

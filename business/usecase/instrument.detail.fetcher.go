@@ -50,7 +50,9 @@ func (is *instrumentservice) FetchEquityStockDetails(ctx context.Context) ([]dto
 			logging.Logger.WriteLogs(ctx, "error_fetching_equity_instrument_from_token", logging.ErrorLevel, logging.Fields{"error": err})
 			continue
 		}
-		instruments = append(instruments, ins)
+		if len(ins.Symbol) > 0 && ins.Price > 0 {
+			instruments = append(instruments, ins)
+		}
 	}
 	return core.GetDtoInstruments(instruments), nil
 }
@@ -75,7 +77,9 @@ func (is *instrumentservice) FetchDerivativeStockDetails(ctx context.Context, sy
 			logging.Logger.WriteLogs(ctx, "error_fetching_derivative_instrumnet_from_token", logging.ErrorLevel, logging.Fields{"error": err})
 			continue
 		}
-		instruments = append(instruments, ins)
+		if len(ins.Symbol) > 0 && ins.Price > 0 {
+			instruments = append(instruments, ins)
+		}
 	}
 	return core.GetDtoInstruments(instruments), nil
 }

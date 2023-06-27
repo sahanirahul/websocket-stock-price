@@ -1,7 +1,6 @@
 package websocket
 
 import (
-	"context"
 	"encoding/json"
 	"log"
 	"sensibull/stocks-api/business/entities/core"
@@ -83,6 +82,7 @@ func (wr *websocketrepo) wsEventListener() error {
 			continue
 		}
 		if event.DataType == utility.DataTypeQuote {
+			// logging.Logger.WriteLogs(ctx, "price_quote_event", logging.ErrorLevel, logging.Fields{"payload": event.Payload})
 			job := core.NewJob(func() {
 				ins, err := wr.db.GetInstrument(ctx, event.Payload.Token)
 				if err != nil {
@@ -116,7 +116,7 @@ func (wr *websocketrepo) updateSubscription() error {
 		req := <-subscriptionChan
 		conn, _ := connection.GetWebSocketConnection(websocketURL, false)
 		if conn == nil {
-			logging.Logger.WriteLogs(context.Background(), "error_getting_websocket_connection_write", logging.ErrorLevel, logging.Fields{})
+			logging.Logger.WriteLogs(ctx, "error_getting_websocket_connection_write", logging.ErrorLevel, logging.Fields{})
 			time.Sleep(time.Second)
 			continue
 		}
@@ -126,7 +126,7 @@ func (wr *websocketrepo) updateSubscription() error {
 		}
 		err = conn.WriteMessage(websocket.TextMessage, payload)
 		if err != nil {
-			logging.Logger.WriteLogs(context.Background(), "websocket_write_error", logging.ErrorLevel, logging.Fields{"error": err})
+			logging.Logger.WriteLogs(ctx, "websocket_write_error", logging.ErrorLevel, logging.Fields{"error": err})
 			time.Sleep(time.Second)
 			continue
 		}

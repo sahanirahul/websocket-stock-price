@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sensibull/stocks-api/business/entities/core"
 	"sensibull/stocks-api/business/utility"
@@ -10,19 +11,27 @@ import (
 )
 
 // should run every 15min
-func (is *instrumentservice) UpdateEquityStockDetails(ctx context.Context) error {
+func (is *instrumentservice) UpdateEquityStockDetails(ctx context.Context) (bool, error) {
 	// fetch the equity instrument list
+	shouldRetry := true
 	underlyingsEQ, err := is.httpir.GetUnderLyings(ctx)
 	if err != nil {
 		logging.Logger.WriteLogs(ctx, "error_fetching_underlying_http", logging.ErrorLevel, logging.Fields{"error": err})
-		return err
+		return shouldRetry, err
+	}
+	if len(underlyingsEQ) == 0 {
+		// could  not fetch derivative details
+		return shouldRetry, errors.New("empty_underlying_response")
 	}
 	prevTokens, err := is.db.GetTokensAgainstToken(ctx, utility.TOKENFORALLUNDERLYING, utility.EQUITY)
 	if err != nil {
 		logging.Logger.WriteLogs(ctx, "error_getting_mapped_tokens_equity", logging.ErrorLevel, logging.Fields{"error": err})
-		return err
+		return shouldRetry, err
 	}
-	go is.updateTokenSet(ctx, utility.TOKENFORALLUNDERLYING, utility.EQUITY, underlyingsEQ, &prevTokens)
+	err = is.updateTokenSet(ctx, utility.TOKENFORALLUNDERLYING, utility.EQUITY, underlyingsEQ, &prevTokens)
+	if err != nil {
+		return shouldRetry, err
+	}
 	for _, val := range underlyingsEQ {
 		if prevTokens.Set == nil || prevTokens.Set.Size() == 0 || !prevTokens.Set.Contains(val.Token) {
 			// subscribe to websocket for this instrument
@@ -35,7 +44,7 @@ func (is *instrumentservice) UpdateEquityStockDetails(ctx context.Context) error
 			}
 		}
 	}
-	return nil
+	return !shouldRetry, nil
 }
 
 // should run every 1min
@@ -45,35 +54,61 @@ func (is *instrumentservice) UpdateDerivativeStockDetails(ctx context.Context) e
 		logging.Logger.WriteLogs(ctx, "error_getting_mapped_tokens_equity_derivative", logging.ErrorLevel, logging.Fields{"error": err})
 		return err
 	}
+	retryCountMap := sync.Map{}
 	var wg sync.WaitGroup
 	for _, val := range curEqTokens.Set.Values() {
 		token := int64(val.(float64))
 		wg.Add(1)
 		is.pool.AddJob(core.NewJob(func() {
 			defer wg.Done()
-			err := is.updateDerivativeStockDetail(ctx, token)
-			if err != nil {
-				logging.Logger.WriteLogs(ctx, "error_updating_derivatives", logging.ErrorLevel, logging.Fields{"error": err, "token": token})
+			retryCountMap.Store(token, 1)
+			for {
+				shouldretry, err := is.updateDerivativeStockDetail(ctx, token)
+				if err != nil {
+					logging.Logger.WriteLogs(ctx, "error_updating_derivatives", logging.ErrorLevel, logging.Fields{"error": err, "token": token})
+				}
+				if shouldretry {
+					val, ok := retryCountMap.Load(token)
+					count := val.(int64)
+					if ok && count > 3 {
+						return
+					}
+					if !ok {
+						count = 1
+					}
+					retryCountMap.Store(token, count+1)
+				} else {
+					return
+				}
 			}
+
 		}))
 	}
 	wg.Wait()
 	return nil
 }
 
-func (is *instrumentservice) updateDerivativeStockDetail(ctx context.Context, underlyingToken int64) error {
+func (is *instrumentservice) updateDerivativeStockDetail(ctx context.Context, underlyingToken int64) (bool, error) {
+	shouldRetry := true
 	// fetch the derivatives instrument list
 	underlyingsDvts, err := is.httpir.GetUnderLyingDerivatives(ctx, underlyingToken)
 	if err != nil {
 		logging.Logger.WriteLogs(ctx, "error_fetching_underlying_derivative_http", logging.ErrorLevel, logging.Fields{"error": err, "underlying_token": underlyingToken})
-		return err
+		return shouldRetry, err
+	}
+	if len(underlyingsDvts) == 0 {
+		// could  not fetch derivative details
+		return shouldRetry, errors.New("empty derivative response")
 	}
 	prevDvtsTokens, err := is.db.GetTokensAgainstToken(ctx, fmt.Sprint(underlyingToken), utility.DERIVATIVES)
 	if err != nil {
 		logging.Logger.WriteLogs(ctx, "error_fetching_mapped_tokens_for_derivatives", logging.ErrorLevel, logging.Fields{"error": err, "underlying_token": underlyingToken})
-		return err
+		return shouldRetry, err
 	}
-	go is.updateTokenSet(ctx, fmt.Sprint(underlyingToken), utility.DERIVATIVES, underlyingsDvts, &prevDvtsTokens)
+	err = is.updateTokenSet(ctx, fmt.Sprint(underlyingToken), utility.DERIVATIVES, underlyingsDvts, &prevDvtsTokens)
+	if err != nil {
+		return shouldRetry, err
+	}
 	for _, val := range underlyingsDvts {
 		if prevDvtsTokens.Set == nil || prevDvtsTokens.Set.Size() == 0 || !prevDvtsTokens.Set.Contains(val.Token) {
 			// subscribe to websocket for this instrument
@@ -86,21 +121,23 @@ func (is *instrumentservice) updateDerivativeStockDetail(ctx context.Context, un
 			}
 		}
 	}
-	return nil
+	return !shouldRetry, nil
 }
 
-func (is *instrumentservice) updateTokenSet(ctx context.Context, itoken, itype string, instrumnets []core.Instrument, prevTokens *core.Tokens) {
+func (is *instrumentservice) updateTokenSet(ctx context.Context, itoken, itype string, instrumnets []core.Instrument, prevTokens *core.Tokens) error {
 	currentTokens := core.NewTokenSet()
 	for _, val := range instrumnets {
 		currentTokens.Set.Add(val.Token)
 	}
+	logging.Logger.WriteLogs(ctx, "saving-tokens-against-token", logging.InfoLevel, logging.Fields{"currentTokens": currentTokens})
 	err := is.db.SaveTokensAgainstToken(ctx, itoken, itype, currentTokens)
 	if err != nil {
 		logging.Logger.WriteLogs(ctx, "error-saving-tokens-against-token", logging.ErrorLevel, logging.Fields{"error": err, "currentTokens": currentTokens})
+		return err
 	}
 	listOfTokensToUnsubscribe := []int64{}
 	if prevTokens.Set == nil || prevTokens.Set.Size() == 0 {
-		return
+		return nil
 	}
 	for _, token := range prevTokens.Set.Values() {
 		if !currentTokens.Set.Contains(token) {
@@ -113,4 +150,5 @@ func (is *instrumentservice) updateTokenSet(ctx context.Context, itoken, itype s
 		}
 	}
 	is.websocket.AddSubscriptionRequest(core.WebsocketSubscription{MessageCommand: utility.MsgCommandUnSubscribe, DataType: utility.DataTypeQuote, Tokens: listOfTokensToUnsubscribe})
+	return nil
 }

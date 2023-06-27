@@ -11,6 +11,7 @@ import (
 	"sensibull/stocks-api/middleware/corel"
 	"sensibull/stocks-api/utils/logging"
 	"sync"
+	"time"
 
 	"github.com/robfig/cron"
 )
@@ -44,10 +45,20 @@ func (cro *cronn) startUnderlyingUpdate() {
 			}
 		}()
 		logging.Logger.WriteLogs(ctx, "cron_started_equity", logging.InfoLevel, logging.Fields{})
-		err := cro.instrumentService.UpdateEquityStockDetails(ctx)
-		if err != nil {
-			logging.Logger.WriteLogs(ctx, "error_while_executing_equity_cron", logging.ErrorLevel, logging.Fields{"error": err})
+		count := 1
+		for count < 3 {
+			shouldRetry, err := cro.instrumentService.UpdateEquityStockDetails(ctx)
+			if err != nil {
+				logging.Logger.WriteLogs(ctx, "error_while_executing_equity_cron", logging.ErrorLevel, logging.Fields{"error": err})
+			}
+			if shouldRetry {
+				time.Sleep(time.Second)
+				count++
+			} else {
+				break
+			}
 		}
+
 		logging.Logger.WriteLogs(ctx, "cron_finished_equity", logging.InfoLevel, logging.Fields{})
 	})
 	c.Start()

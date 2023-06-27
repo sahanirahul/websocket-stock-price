@@ -20,14 +20,14 @@ func provideInstrumentRouter() *instrumentRouter {
 	dbrepo := db.NewInstrumentRepo()
 	instrumentService := usecase.NewInstrumentService(http.NewInstrumentHttpRepo(), websocket.NewWebsocketRepo(dbrepo), dbrepo, worker.NewWorkerPool(50, 50))
 	ctx := corel.CreateNewContext()
-	logging.Logger.WriteLogs(ctx, "starting_initial_update_equity_details_job", logging.ErrorLevel, logging.Fields{})
-	err := instrumentService.UpdateEquityStockDetails(ctx)
+	logging.Logger.WriteLogs(ctx, "starting_initial_update_equity_details_job", logging.InfoLevel, logging.Fields{})
+	_, err := instrumentService.UpdateEquityStockDetails(ctx)
 	if err != nil {
 		logging.Logger.WriteLogs(ctx, "unable_to_run_initial_equity_update_job", logging.ErrorLevel, logging.Fields{"error": err})
 		log.Fatal(err)
 	}
 	go func() {
-		logging.Logger.WriteLogs(ctx, "starting_initial_update_derivative_details_job", logging.ErrorLevel, logging.Fields{})
+		logging.Logger.WriteLogs(ctx, "starting_initial_update_derivative_details_job", logging.InfoLevel, logging.Fields{})
 		err := instrumentService.UpdateDerivativeStockDetails(ctx)
 		if err != nil {
 			logging.Logger.WriteLogs(ctx, "unable_to_run_initial_derivative_update_job", logging.ErrorLevel, logging.Fields{"error": err})
