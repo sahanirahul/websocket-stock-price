@@ -75,7 +75,7 @@ func (ir *instrumentRouter) getUnderlyingPrices(c *gin.Context) {
 	payload, err := ir.instrumentService.FetchEquityStockDetails(c)
 	if err != nil {
 		logging.Logger.WriteLogs(c, "error_fetching_underlyings", logging.ErrorLevel, logging.Fields{"error": err})
-		c.JSON(corehttp.StatusOK, gin.H{
+		c.JSON(corehttp.StatusUnprocessableEntity, gin.H{
 			"success": false,
 			"error":   err.Error(),
 		})
