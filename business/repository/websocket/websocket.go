@@ -3,6 +3,7 @@ package websocket
 import (
 	"encoding/json"
 	"log"
+	"os"
 	"sensibull/stocks-api/business/entities/core"
 	"sensibull/stocks-api/business/interfaces/icore"
 	"sensibull/stocks-api/business/interfaces/irepo"
@@ -12,6 +13,7 @@ import (
 	"sensibull/stocks-api/middleware"
 	"sensibull/stocks-api/middleware/corel"
 	"sensibull/stocks-api/utils/logging"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -31,8 +33,13 @@ var repo *websocketrepo
 
 func NewWebsocketRepo(db irepo.IInstrumentRepo) irepo.IWebsocketRepo {
 	once.Do(func() {
+		numberOfWorkerStr := os.Getenv("WEBSOCKET_WORKER_POOL_SIZE")
+		numberOfWorker, _ := strconv.Atoi(numberOfWorkerStr)
+		if numberOfWorker == 0 {
+			numberOfWorker = 50
+		}
 		subscriptionChan = make(chan core.WebsocketSubscription, 100)
-		repo = &websocketrepo{db: db, pool: worker.NewWorkerPool(50, 100)}
+		repo = &websocketrepo{db: db, pool: worker.NewWorkerPool(numberOfWorker, 2*numberOfWorker)}
 		go repo.updateSubscription()
 		go repo.wsEventListener()
 	})

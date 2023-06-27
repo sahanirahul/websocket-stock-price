@@ -1,0 +1,33 @@
+version: '3'
+services:
+  redis:
+    image: redis
+    ports:
+      - 6379:6379
+    networks:
+      - mynetwork
+    container_name: my-docker-redis
+
+  myapp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 19093:19093
+    networks:
+      - mynetwork
+    depends_on:
+      - redis
+    container_name: sensibull-stock-price-api-server
+    image: sensibull-stocks-api:v1.01
+    environment:
+      - CONFIGPATH=/app/config/config.local.json
+      - LOGDIR=/app/logs
+      - PORT=19093
+      - ENV=dev
+      - REDIS_DOCKER_ADDR=my-docker-redis:6379
+      - SERVICE_WORKER_POOL_SIZE=10
+      - WEBSOCKET_WORKER_POOL_SIZE=20
+
+networks:
+  mynetwork:

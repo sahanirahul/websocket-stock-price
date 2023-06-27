@@ -3,6 +3,7 @@ package router
 import (
 	"log"
 	corehttp "net/http"
+	"os"
 	"sensibull/stocks-api/business/interfaces/iusecase"
 	"sensibull/stocks-api/business/repository/db"
 	"sensibull/stocks-api/business/repository/http"
@@ -11,19 +12,27 @@ import (
 	"sensibull/stocks-api/business/worker"
 	"sensibull/stocks-api/middleware/corel"
 	"sensibull/stocks-api/utils/logging"
+	"strconv"
 	"sync"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
 func provideInstrumentRouter() *instrumentRouter {
 	dbrepo := db.NewInstrumentRepo()
-	instrumentService := usecase.NewInstrumentService(http.NewInstrumentHttpRepo(), websocket.NewWebsocketRepo(dbrepo), dbrepo, worker.NewWorkerPool(50, 50))
+	numberOfWorkerStr := os.Getenv("SERVICE_WORKER_POOL_SIZE")
+	numberOfWorker, _ := strconv.Atoi(numberOfWorkerStr)
+	if numberOfWorker == 0 {
+		numberOfWorker = 50
+	}
+	instrumentService := usecase.NewInstrumentService(http.NewInstrumentHttpRepo(), websocket.NewWebsocketRepo(dbrepo), dbrepo, worker.NewWorkerPool(numberOfWorker, 2*numberOfWorker))
 	ctx := corel.CreateNewContext()
 	logging.Logger.WriteLogs(ctx, "starting_initial_update_equity_details_job", logging.InfoLevel, logging.Fields{})
 	_, err := instrumentService.UpdateEquityStockDetails(ctx)
 	if err != nil {
 		logging.Logger.WriteLogs(ctx, "unable_to_run_initial_equity_update_job", logging.ErrorLevel, logging.Fields{"error": err})
+		time.Sleep(5 * time.Second)
 		log.Fatal(err)
 	}
 	go func() {
@@ -31,6 +40,7 @@ func provideInstrumentRouter() *instrumentRouter {
 		err := instrumentService.UpdateDerivativeStockDetails(ctx)
 		if err != nil {
 			logging.Logger.WriteLogs(ctx, "unable_to_run_initial_derivative_update_job", logging.ErrorLevel, logging.Fields{"error": err})
+			time.Sleep(5 * time.Second)
 			log.Fatal(err)
 		}
 	}()

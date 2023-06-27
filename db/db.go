@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"os"
 	"sensibull/stocks-api/bootconfig"
 	"strings"
 	"sync"
@@ -39,9 +40,28 @@ func initRedisClient() {
 		Password: "",
 		DB:       0,
 	})
-
-	pong, err := cli.Ping(context.Background()).Result()
-	fmt.Println(pong, err)
+	fmt.Println("trying to connect to redis localhost address:", credentials.Url[0])
+	pong := ""
+	pong, err = cli.Ping(context.Background()).Result()
+	if err != nil {
+		fmt.Println(err)
+		redis_docker_addr := os.Getenv("REDIS_DOCKER_ADDR")
+		if len(redis_docker_addr) == 0 {
+			redis_docker_addr = "my-docker-redis:6379"
+		}
+		fmt.Println("retrying with redis docker address:", redis_docker_addr)
+		cli = redis.NewClient(&redis.Options{
+			Addr:     redis_docker_addr,
+			Password: "",
+			DB:       0,
+		})
+		pong, err = cli.Ping(context.Background()).Result()
+		if err != nil {
+			fmt.Println()
+			log.Fatalf("redis error : %s", err.Error())
+		}
+	}
+	fmt.Println(pong)
 }
 
 func GetRedisClient() *redis.Client {
