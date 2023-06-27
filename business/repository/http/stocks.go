@@ -39,7 +39,7 @@ func (cr *httprepo) GetUnderLyings(ctx context.Context) ([]core.Instrument, erro
 		logging.Logger.WriteLogs(ctx, "error_fetching_underlyings_http_request", logging.ErrorLevel, logging.Fields{"error": err})
 		return nil, err
 	}
-	logging.Logger.WriteLogs(ctx, "http_call_response_underlyings", logging.InfoLevel, logging.Fields{"response-body": response})
+	logging.Logger.WriteLogs(ctx, "http_call_response_underlyings", logging.DebugLevel, logging.Fields{"response-body": response})
 	if status != http.StatusOK {
 		logging.Logger.WriteLogs(ctx, "error_status_code_not_ok", logging.ErrorLevel, logging.Fields{"statusCode": status})
 	}
@@ -63,7 +63,7 @@ func (cr *httprepo) GetUnderLyingDerivatives(ctx context.Context, underLyingToke
 		logging.Logger.WriteLogs(ctx, "error_fetching_derivative_http_request", logging.ErrorLevel, logging.Fields{"error": err})
 		return nil, err
 	}
-	logging.Logger.WriteLogs(ctx, "http_call_response_derivatives", logging.InfoLevel, logging.Fields{"response-body": response, "token": underLyingToken})
+	logging.Logger.WriteLogs(ctx, "http_call_response_derivatives", logging.DebugLevel, logging.Fields{"response-body": response, "token": underLyingToken})
 	if status != http.StatusOK {
 		logging.Logger.WriteLogs(ctx, "error_status_code_not_ok_derivatives", logging.ErrorLevel, logging.Fields{"statusCode": status})
 	}
