@@ -2,7 +2,7 @@ package connection
 
 import (
 	"context"
-	"sensibull/stocks-api/utils/logging"
+	"priceupdater/stocks-api/utils/logging"
 	"sync"
 
 	"github.com/gorilla/websocket"

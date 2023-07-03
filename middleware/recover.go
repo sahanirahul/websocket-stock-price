@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"context"
-	"sensibull/stocks-api/utils/logging"
+	"priceupdater/stocks-api/utils/logging"
 
 	"github.com/gin-gonic/gin"
 )

@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sensibull/stocks-api/business/entities/core"
-	"sensibull/stocks-api/business/utility"
-	"sensibull/stocks-api/utils/logging"
+	"priceupdater/stocks-api/business/entities/core"
+	"priceupdater/stocks-api/business/utility"
+	"priceupdater/stocks-api/utils/logging"
 	"sync"
 )
 

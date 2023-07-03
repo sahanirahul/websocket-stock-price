@@ -2,7 +2,7 @@ package iusecase
 
 import (
 	"context"
-	"sensibull/stocks-api/business/entities/dto"
+	"priceupdater/stocks-api/business/entities/dto"
 )
 
 type IStocksInstrumentsService interface {

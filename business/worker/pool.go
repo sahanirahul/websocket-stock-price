@@ -2,10 +2,10 @@ package worker
 
 import (
 	"fmt"
-	"sensibull/stocks-api/business/entities/core"
-	"sensibull/stocks-api/business/interfaces/icore"
-	"sensibull/stocks-api/middleware"
-	"sensibull/stocks-api/middleware/corel"
+	"priceupdater/stocks-api/business/entities/core"
+	"priceupdater/stocks-api/business/interfaces/icore"
+	"priceupdater/stocks-api/middleware"
+	"priceupdater/stocks-api/middleware/corel"
 )
 
 type worker struct {

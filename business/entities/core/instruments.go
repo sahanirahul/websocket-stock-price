@@ -2,7 +2,7 @@ package core
 
 import (
 	"encoding/json"
-	"sensibull/stocks-api/business/entities/dto"
+	"priceupdater/stocks-api/business/entities/dto"
 
 	"github.com/emirpasic/gods/sets/hashset"
 )

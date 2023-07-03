@@ -1,10 +1,10 @@
 package routes
 
 import (
-	"sensibull/stocks-api/business/router"
-	"sensibull/stocks-api/middleware"
-	"sensibull/stocks-api/middleware/corel"
-	"sensibull/stocks-api/utils/logging"
+	"priceupdater/stocks-api/business/router"
+	"priceupdater/stocks-api/middleware"
+	"priceupdater/stocks-api/middleware/corel"
+	"priceupdater/stocks-api/utils/logging"
 
 	"github.com/gin-gonic/gin"
 )

@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"sensibull/stocks-api/business/entities/core"
-	"sensibull/stocks-api/business/interfaces/irepo"
-	"sensibull/stocks-api/utils/logging"
+	"priceupdater/stocks-api/business/entities/core"
+	"priceupdater/stocks-api/business/interfaces/irepo"
+	"priceupdater/stocks-api/utils/logging"
 	"sync"
 	"time"
 )

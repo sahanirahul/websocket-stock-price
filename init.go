@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"sensibull/stocks-api/bootconfig"
-	"sensibull/stocks-api/cron"
-	"sensibull/stocks-api/db"
-	"sensibull/stocks-api/utils/logging"
+	"priceupdater/stocks-api/bootconfig"
+	"priceupdater/stocks-api/cron"
+	"priceupdater/stocks-api/db"
+	"priceupdater/stocks-api/utils/logging"
 )
 
 const (

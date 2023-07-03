@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
-	"sensibull/stocks-api/utils/logging"
+	"priceupdater/stocks-api/utils/logging"
 	"time"
 )
 

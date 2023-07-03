@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"sensibull/stocks-api/bootconfig"
+	"priceupdater/stocks-api/bootconfig"
 	"strings"
 	"sync"
 

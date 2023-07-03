@@ -4,7 +4,7 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"sensibull/stocks-api/routes"
+	"priceupdater/stocks-api/routes"
 
 	"github.com/gin-gonic/gin"
 )

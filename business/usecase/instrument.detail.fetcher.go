@@ -3,13 +3,13 @@ package usecase
 import (
 	"context"
 	"fmt"
-	"sensibull/stocks-api/business/entities/core"
-	"sensibull/stocks-api/business/entities/dto"
-	"sensibull/stocks-api/business/interfaces/icore"
-	"sensibull/stocks-api/business/interfaces/irepo"
-	"sensibull/stocks-api/business/interfaces/iusecase"
-	"sensibull/stocks-api/business/utility"
-	"sensibull/stocks-api/utils/logging"
+	"priceupdater/stocks-api/business/entities/core"
+	"priceupdater/stocks-api/business/entities/dto"
+	"priceupdater/stocks-api/business/interfaces/icore"
+	"priceupdater/stocks-api/business/interfaces/irepo"
+	"priceupdater/stocks-api/business/interfaces/iusecase"
+	"priceupdater/stocks-api/business/utility"
+	"priceupdater/stocks-api/utils/logging"
 	"sync"
 )
 

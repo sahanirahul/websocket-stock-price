@@ -3,11 +3,11 @@ package db
 import (
 	"context"
 	"fmt"
-	"sensibull/stocks-api/business/entities/core"
-	"sensibull/stocks-api/business/interfaces/irepo"
-	"sensibull/stocks-api/business/utility"
-	"sensibull/stocks-api/db"
-	"sensibull/stocks-api/utils/logging"
+	"priceupdater/stocks-api/business/entities/core"
+	"priceupdater/stocks-api/business/interfaces/irepo"
+	"priceupdater/stocks-api/business/utility"
+	"priceupdater/stocks-api/db"
+	"priceupdater/stocks-api/utils/logging"
 	"sync"
 	"time"
 )

@@ -1,4 +1,4 @@
-module sensibull/stocks-api
+module priceupdater/stocks-api
 
 go 1.18
 

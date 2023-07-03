@@ -2,7 +2,7 @@ package irepo
 
 import (
 	"context"
-	"sensibull/stocks-api/business/entities/core"
+	"priceupdater/stocks-api/business/entities/core"
 )
 
 type IInstrumentRepo interface {

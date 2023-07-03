@@ -5,7 +5,7 @@ import (
 	"encoding"
 	"encoding/json"
 	"errors"
-	"sensibull/stocks-api/utils/logging"
+	"priceupdater/stocks-api/utils/logging"
 	"time"
 
 	"github.com/redis/go-redis/v9"

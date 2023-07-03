@@ -8,7 +8,7 @@ import (
 	"math"
 	"os"
 	"path"
-	"sensibull/stocks-api/middleware/corel"
+	"priceupdater/stocks-api/middleware/corel"
 	"sync"
 	"time"
 
